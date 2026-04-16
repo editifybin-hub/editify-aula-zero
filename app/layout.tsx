@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   description:
     "Como conseguir seus primeiros clientes editando vídeos. Assista a Aula 0 do treinamento Editify gratuitamente.",
   metadataBase: new URL("https://aulazero.editify.com.br"),
+  icons: {
+    icon: "/favicon.png",
+    apple: "/icon.png",
+  },
   openGraph: {
     title: "Aula 0 | Treinamento Editify",
     description:
