@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-editify-bg: #000000;
+  --color-editify-surface: #111111;
+  --color-editify-hairline: #1a1a1a;
+  --color-editify-text: #ffffff;
+  --color-editify-muted: #9a9a9a;
+  --color-editify-accent: #e30613;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-bebas);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
