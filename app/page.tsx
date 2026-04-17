@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import NotifyPopup from "@/components/NotifyPopup";
 
-const DELAY_MS = 30 * 60 * 1000; // 30 minutes
+const DELAY_MS = 15 * 60 * 1000; // 15 minutes
 
 export default function Page() {
   const [showCTA, setShowCTA] = useState(false);
