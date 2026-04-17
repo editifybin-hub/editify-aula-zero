@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X, Bell, CheckCircle2 } from "lucide-react";
+
+function cleanPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length >= 12 && digits.startsWith("55")) digits = digits.slice(2);
+  if (digits.length >= 11 && digits.startsWith("0")) digits = digits.slice(1);
+  return digits;
+}
 
 function validateFields(form: { name: string; email: string; whatsapp: string }) {
   const errors: Record<string, string> = {};
   if (!form.name.trim()) errors.name = "Preencha seu nome.";
+  else if (form.name.trim().length < 2) errors.name = "Nome muito curto.";
+
   const email = form.email.trim().toLowerCase();
-  if (!email || !/.+@.+\..+/.test(email)) errors.email = "E-mail inválido.";
-  const digits = form.whatsapp.replace(/\D/g, "");
-  if (digits.length < 10 || digits.length > 11) errors.whatsapp = "WhatsApp inválido.";
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))
+    errors.email = "E-mail inválido.";
+
+  const digits = cleanPhone(form.whatsapp);
+  if (digits.length < 10 || digits.length > 11)
+    errors.whatsapp = "WhatsApp inválido. Ex: (11) 99999-9999";
+
   return errors;
 }
 
@@ -24,6 +37,7 @@ export default function NotifyPopup({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const submittingRef = useRef(false);
 
   const update = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -37,6 +51,7 @@ export default function NotifyPopup({ isOpen, onClose }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setGeneralError("");
 
     const errors = validateFields(form);
@@ -45,24 +60,45 @@ export default function NotifyPopup({ isOpen, onClose }: Props) {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
+        signal: controller.signal,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        setGeneralError(data.errors?.[0] || data.error || "Erro ao enviar.");
+      clearTimeout(timeoutId);
+
+      let data: { success?: boolean; errors?: string[]; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // no body
+      }
+
+      if (!res.ok || data.success === false) {
+        const msgs = data.errors?.length ? data.errors.join(" ") : data.error;
+        setGeneralError(msgs || "Erro ao enviar. Tente novamente.");
         return;
       }
 
       setSubmitted(true);
-    } catch {
-      setGeneralError("Erro de conexão. Tente novamente.");
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        setGeneralError("Conexão lenta. Tente novamente.");
+      } else {
+        setGeneralError("Erro de conexão. Tente novamente.");
+      }
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
