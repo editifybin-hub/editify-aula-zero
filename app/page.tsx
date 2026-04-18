@@ -1,18 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import NotifyPopup from "@/components/NotifyPopup";
 
-const DELAY_MS = 15 * 60 * 1000; // 15 minutes
-
 export default function Page() {
-  const [showCTA, setShowCTA] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowCTA(true), DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,7 +25,7 @@ export default function Page() {
       </header>
 
       {/* YouTube Embed */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 pb-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 pb-12">
         <div
           className="relative w-full rounded-2xl overflow-hidden border border-white/10"
           style={{
@@ -51,21 +43,23 @@ export default function Page() {
           />
         </div>
 
-        {/* CTA Button — appears after 30 min */}
-        {showCTA && (
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={() => setPopupOpen(true)}
-              className="group flex items-center justify-center gap-3 bg-editify-accent text-white font-bold text-sm sm:text-base uppercase tracking-wider px-8 py-[18px] rounded-xl min-h-[58px] cursor-pointer transition-all duration-300 hover:brightness-110 hover:-translate-y-0.5"
-              style={{
-                boxShadow:
-                  "0 12px 40px rgba(227,6,19,0.38), 0 0 70px rgba(227,6,19,0.22)",
-              }}
-            >
-              Quero ser notificado quando lançar
-            </button>
-          </div>
-        )}
+        {/* CTA Button — always visible */}
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <p className="text-editify-muted text-center text-sm sm:text-base max-w-lg">
+            Entre na lista para ser notificado e garantir o menor preço no dia
+            da abertura.
+          </p>
+          <button
+            onClick={() => setPopupOpen(true)}
+            className="group flex items-center justify-center gap-3 bg-editify-accent text-white font-bold text-sm sm:text-base uppercase tracking-wider px-8 py-[18px] rounded-xl min-h-[58px] cursor-pointer transition-all duration-300 hover:brightness-110 hover:-translate-y-0.5 w-full sm:w-auto"
+            style={{
+              boxShadow:
+                "0 12px 40px rgba(227,6,19,0.38), 0 0 70px rgba(227,6,19,0.22)",
+            }}
+          >
+            Quero ser notificado quando lançar
+          </button>
+        </div>
       </main>
 
       <NotifyPopup isOpen={popupOpen} onClose={() => setPopupOpen(false)} />
