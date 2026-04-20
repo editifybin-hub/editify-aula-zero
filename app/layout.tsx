@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Bebas_Neue } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,7 +42,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${bebasNeue.variable}`}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
