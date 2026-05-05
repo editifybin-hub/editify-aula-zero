@@ -96,14 +96,42 @@ export interface UpsertInput {
 type CustomFieldValue = string | number | boolean;
 type CustomFieldUpdate = { id: string; value: CustomFieldValue };
 
+interface ClickUpDropdownOption {
+  id: string;
+  name?: string;
+  orderindex?: number;
+}
+
 interface ClickUpTaskField {
   id: string;
   value?: unknown;
+  type?: string;
+  type_config?: {
+    options?: ClickUpDropdownOption[];
+  };
 }
 
 interface ClickUpTask {
   id: string;
   custom_fields?: ClickUpTaskField[];
+}
+
+/**
+ * ClickUp dropdown reads return value as orderindex (number) but writes accept
+ * UUID. Resolve to UUID via type_config.options for safe equality comparison.
+ */
+function dropdownValueId(field: ClickUpTaskField | undefined): string | null {
+  if (!field) return null;
+  const val = field.value;
+  if (val == null || val === "") return null;
+  if (typeof val === "string") return val;
+  if (typeof val === "number") {
+    const opt = field.type_config?.options?.find(
+      (o) => o.orderindex === val
+    );
+    return opt?.id ?? null;
+  }
+  return null;
 }
 
 function authHeaders(): HeadersInit {
@@ -212,9 +240,10 @@ async function updateLead(
     task.custom_fields?.find((f) => f.id === id);
   const cfValue = (id: string) => cf(id)?.value;
 
-  const fonteInicialAtual = cfValue(FIELD.fonte_inicial);
-  const fonteExtraAtual = cfValue(FIELD.fonte_extra);
-  const segmentoAtual = cfValue(FIELD.segmento);
+  // Dropdown reads return orderindex; resolve to UUID for comparison.
+  const fonteInicialAtual = dropdownValueId(cf(FIELD.fonte_inicial));
+  const fonteExtraAtual = dropdownValueId(cf(FIELD.fonte_extra));
+  const segmentoAtual = dropdownValueId(cf(FIELD.segmento));
 
   const updates: CustomFieldUpdate[] = [
     { id: FIELD.ultima_captura, value: todayMs },
@@ -266,21 +295,30 @@ async function updateLead(
     }
   }
 
+  // Date fields need value_options.time=false to avoid timezone shifting.
+  const dateFieldIds = new Set<string>([
+    FIELD.primeira_captura,
+    FIELD.ultima_captura,
+  ]);
+
   // ClickUp atualiza custom fields em endpoint separado, um por chamada.
   await Promise.all(
-    updates.map((u) =>
-      fetch(`${BASE}/task/${taskId}/field/${u.id}`, {
+    updates.map((u) => {
+      const body = dateFieldIds.has(u.id)
+        ? { value: u.value, value_options: { time: false } }
+        : { value: u.value };
+      return fetch(`${BASE}/task/${taskId}/field/${u.id}`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ value: u.value }),
+        body: JSON.stringify(body),
       }).then(async (r) => {
         if (!r.ok) {
           console.error(
             `Update falhou no campo ${u.id}: ${r.status} ${await r.text()}`
           );
         }
-      })
-    )
+      });
+    })
   );
 }
 
