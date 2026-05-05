@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { appendToSheet, GoogleSheetsConfigError } from "@/lib/google-sheets";
+import { upsertLead } from "@/lib/clickup";
 
 function cleanPhone(raw: string): string {
   let digits = raw.replace(/\D/g, "");
@@ -100,6 +101,21 @@ export async function POST(request: Request) {
       );
     } catch (err) {
       return mapErrorToResponse(err, requestId);
+    }
+
+    // ClickUp upsert (best-effort — Sheets já garantiu o lead)
+    try {
+      const cu = await upsertLead({
+        source: "aulazero",
+        nome: cleanName,
+        whatsapp: digits,
+        email: cleanEmail,
+      });
+      console.log(
+        `[${requestId}] ClickUp ${cu.created ? "created" : "updated"} task ${cu.taskId}`
+      );
+    } catch (err) {
+      console.error(`[${requestId}] ClickUp falhou (não bloqueia):`, err);
     }
 
     return NextResponse.json({ success: true, requestId });
